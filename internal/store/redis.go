@@ -41,4 +41,26 @@ func (s *RedisStore) Get(ctx context.Context, key string) (*IdempotencyRecord, e
 	if err == redis.Nil {
 		return nil, nil
 	}
+
+	var rec IdempotencyRecord
+
+	if err := json.Unmarshal(data, &rec); err != nil {
+		return nil, err
+	}
+
+	return &rec, nil
+}
+
+
+func (s *RedisStore) Set(ctx context.Context, key string, rec *IdempotencyRecord, ttl time.Duration) error {
+	data, err := json.Marshal(rec)
+	if err != nil {
+		return err
+	}
+
+	return s.client.Set(ctx, "idemp:"+key, data, ttl).Err()
+}
+
+func (s *RedisStore) Close() error {
+	return s.client.Close()
 }
